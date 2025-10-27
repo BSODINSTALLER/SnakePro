@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Pro - Ultimate Edition</title>
+    <style>
+        :root {
+            --primary: #00ff88;
+            --secondary: #0088ff;
+            --accent: #ff0088;
+            --dark: #0a0a0a;
+            --darker: #050505;
+            --light: #ffffff;
+            --gray: #333333;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: var(--darker);
+            color: var(--light);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Auth System */
+        .auth-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(5, 5, 5, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .auth-box {
+            background: var(--dark);
+            padding: 2rem;
+            border-radius: 15px;
+            border: 2px solid var(--primary);
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.3);
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .auth-title {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: var(--primary);
+            font-size: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            background: var(--darker);
+            border: 1px solid var(--gray);
+            border-radius: 5px;
+            color: var(--light);
+            font-family: 'Courier New', monospace;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            border: none;
+            border-radius: 5px;
+            color: var(--dark);
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 255, 136, 0.4);
+        }
+
+        .auth-switch {
+            text-align: center;
+            margin-top: 1rem;
+            color: var(--light);
+        }
+
+        .auth-link {
+            color: var(--primary);
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        /* Game Layout */
+        .sidebar {
+            width: 300px;
+            background: var(--dark);
+            padding: 2rem;
+            border-right: 1px solid var(--gray);
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .game-header {
+            padding: 1rem 2rem;
+            background: var(--dark);
+            border-bottom: 1px solid var(--gray);
+        }
+
+        .game-area {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        /* User Info */
+        .user-info {
+            background: var(--darker);
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            border: 1px solid var(--gray);
+        }
+
+        .user-welcome {
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        /* Leaderboard */
+        .leaderboard {
+            background: var(--darker);
+            padding: 1rem;
+            border-radius: 10px;
+            border: 1px solid var(--gray);
+        }
+
+        .leaderboard-title {
+            color: var(--secondary);
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .leaderboard-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem;
+            border-bottom: 1px solid var(--gray);
+        }
+
+        .leaderboard-item.current-user {
+            background: rgba(0, 255, 136, 0.1);
+            border-left: 3px solid var(--primary);
+        }
+
+        /* Game Canvas */
+        .game-container {
+            position: relative;
+        }
+
+        #gameCanvas {
+            border: 3px solid var(--primary);
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.2);
+        }
+
+        /* UI Overlays */
+        .ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .score-display {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .level-display {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--secondary);
+        }
+
+        /* Game Menus */
+        .game-menu {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(10, 10, 10, 0.95);
+            padding: 2rem;
+            border-radius: 15px;
+            border: 2px solid var(--primary);
+            text-align: center;
+            min-width: 300px;
+            pointer-events: all;
+        }
+
+        .game-title {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .stat-item {
+            background: var(--darker);
+            padding: 1rem;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--light);
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Authentication System -->
+        <div id="authContainer" class="auth-container">
+            <div class="auth-box">
+                <div id="loginView">
+                    <h2 class="auth-title">SNAKE PRO</h2>
+                    <div class="form-group">
+                        <input type="text" id="loginUsername" class="form-input" placeholder="Username" maxlength="20">
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="loginPassword" class="form-input" placeholder="Password">
+                    </div>
+                    <button class="btn" onclick="login()">LOGIN</button>
+                    <div class="auth-switch">
+                        Don't have an account? <span class="auth-link" onclick="showRegister()">Register</span>
+                    </div>
+                </div>
+
+                <div id="registerView" class="hidden">
+                    <h2 class="auth-title">REGISTER</h2>
+                    <div class="form-group">
+                        <input type="text" id="registerUsername" class="form-input" placeholder="Username" maxlength="20">
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="registerPassword" class="form-input" placeholder="Password (min 6 chars)">
+                    </div>
+                    <div class="form-group">
+                        <input type="email" id="registerEmail" class="form-input" placeholder="Email (optional)">
+                    </div>
+                    <button class="btn" onclick="register()">CREATE ACCOUNT</button>
+                    <div class="auth-switch">
+                        Already have an account? <span class="auth-link" onclick="showLogin()">Login</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="user-info">
+                <h3 class="user-welcome" id="welcomeMessage">Welcome, Player!</h3>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value" id="userBestScore">0</div>
+                        <div class="stat-label">BEST SCORE</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="userGamesPlayed">0</div>
+                        <div class="stat-label">GAMES PLAYED</div>
+                    </div>
+                </div>
+                <button class="btn" onclick="logout()" style="margin-top: 1rem;">LOGOUT</button>
+            </div>
+
+            <div class="leaderboard">
+                <h3 class="leaderboard-title">LEADERBOARD</h3>
+                <div id="leaderboardList">
+                    <!-- Leaderboard items will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="game-header">
+                <h1>SNAKE PRO - ULTIMATE EDITION</h1>
+            </div>
+            
+            <div class="game-area">
+                <div class="game-container">
+                    <canvas id="gameCanvas" width="600" height="600"></canvas>
+                    
+                    <div class="ui-overlay">
+                        <div class="score-display">SCORE: <span id="currentScore">0</span></div>
+                        <div class="level-display">LEVEL: <span id="currentLevel">1</span></div>
+                        
+                        <div id="startMenu" class="game-menu">
+                            <h2 class="game-title">SNAKE PRO</h2>
+                            <p style="margin-bottom: 1rem; color: #ccc;">Use arrow keys to control the snake</p>
+                            <button class="btn" onclick="startGame()">START GAME</button>
+                            <div class="stats-grid" style="margin-top: 1rem;">
+                                <div class="stat-item">
+                                    <div class="stat-value" id="menuBestScore">0</div>
+                                    <div class="stat-label">BEST SCORE</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value" id="menuLevel">1</div>
+                                    <div class="stat-label">BEST LEVEL</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="pauseMenu" class="game-menu hidden">
+                            <h2 style="color: var(--primary); margin-bottom: 1rem;">GAME PAUSED</h2>
+                            <button class="btn" onclick="resumeGame()">RESUME</button>
+                            <button class="btn" onclick="restartGame()">RESTART</button>
+                        </div>
+                        
+                        <div id="gameOverMenu" class="game-menu hidden">
+                            <h2 style="color: var(--accent); margin-bottom: 1rem;">GAME OVER</h2>
+                            <p style="margin-bottom: 1rem; color: #ccc;">Final Score: <span id="finalScore">0</span></p>
+                            <p style="margin-bottom: 1rem; color: #ccc;">Level Reached: <span id="finalLevel">1</span></p>
+                            <button class="btn" onclick="restartGame()">PLAY AGAIN</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== ADVANCED USER SYSTEM ====================
+        class UserManager {
+            constructor() {
+                this.currentUser = null;
+                this.users = JSON.parse(localStorage.getItem('snakeProUsers')) || {};
+                this.leaderboard = JSON.parse(localStorage.getItem('snakeProLeaderboard')) || [];
+            }
+
+            register(username, password, email = '') {
+                if (this.users[username]) {
+                    throw new Error('Username already exists');
+                }
+
+                if (password.length < 6) {
+                    throw new Error('Password must be at least 6 characters');
+                }
+
+                const user = {
+                    username,
+                    password: btoa(password), // Simple encoding (not secure for production)
+                    email,
+                    bestScore: 0,
+                    bestLevel: 1,
+                    gamesPlayed: 0,
+                    totalScore: 0,
+                    joinDate: new Date().toISOString()
+                };
+
+                this.users[username] = user;
+                this.saveUsers();
+                return user;
+            }
+
+            login(username, password) {
+                const user = this.users[username];
+                if (!user || user.password !== btoa(password)) {
+                    throw new Error('Invalid username or password');
+                }
+                this.currentUser = user;
+                return user;
+            }
+
+            logout() {
+                this.currentUser = null;
+            }
+
+            updateUserStats(score, level) {
+                if (!this.currentUser) return;
+
+                const user = this.users[this.currentUser.username];
+                user.gamesPlayed++;
+                user.totalScore += score;
+
+                if (score > user.bestScore) {
+                    user.bestScore = score;
+                }
+
+                if (level > user.bestLevel) {
+                    user.bestLevel = level;
+                }
+
+                this.updateLeaderboard(user.username, score, level);
+                this.saveUsers();
+                this.saveLeaderboard();
+            }
+
+            updateLeaderboard(username, score, level) {
+                const entry = {
+                    username,
+                    score,
+                    level,
+                    date: new Date().toISOString()
+                };
+
+                // Remove old entry if exists
+                this.leaderboard = this.leaderboard.filter(entry => entry.username !== username);
+                
+                // Add new entry
+                this.leaderboard.push(entry);
+                
+                // Sort by score (descending)
+                this.leaderboard.sort((a, b) => b.score - a.score);
+                
+                // Keep only top 10
+                this.leaderboard = this.leaderboard.slice(0, 10);
+            }
+
+            getLeaderboard() {
+                return this.leaderboard;
+            }
+
+            saveUsers() {
+                localStorage.setItem('snakeProUsers', JSON.stringify(this.users));
+            }
+
+            saveLeaderboard() {
+                localStorage.setItem('snakeProLeaderboard', JSON.stringify(this.leaderboard));
+            }
+        }
+
+        // ==================== GAME ENGINE ====================
+        class SnakeGame {
+            constructor(canvas) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                this.gridSize = 20;
+                this.canvasSize = 600;
+                
+                this.reset();
+            }
+
+            reset() {
+                this.snake = [
+                    { x: 300, y: 300 },
+                    { x: 280, y: 300 },
+                    { x: 260, y: 300 }
+                ];
+                this.direction = { x: this.gridSize, y: 0 };
+                this.nextDirection = { x: this.gridSize, y: 0 };
+                this.score = 0;
+                this.level = 1;
+                this.gameSpeed = 120;
+                this.isPaused = false;
+                this.generateFood();
+            }
+
+            generateFood() {
+                let newFood;
+                let onSnake;
+                
+                do {
+                    onSnake = false;
+                    newFood = {
+                        x: Math.floor(Math.random() * (this.canvasSize / this.gridSize)) * this.gridSize,
+                        y: Math.floor(Math.random() * (this.canvasSize / this.gridSize)) * this.gridSize
+                    };
+                    
+                    for (let segment of this.snake) {
+                        if (segment.x === newFood.x && segment.y === newFood.y) {
+                            onSnake = true;
+                            break;
+                        }
+                    }
+                } while (onSnake);
+                
+                this.food = newFood;
+            }
+
+            update() {
+                if (this.isPaused) return;
+
+                this.direction = { ...this.nextDirection };
+
+                // Move snake
+                const head = { 
+                    x: this.snake[0].x + this.direction.x, 
+                    y: this.snake[0].y + this.direction.y 
+                };
+                this.snake.unshift(head);
+
+                // Check collision with food
+                if (head.x === this.food.x && head.y === this.food.y) {
+                    this.score += 10 * this.level;
+                    
+                    // Level up every 50 points
+                    if (this.score % 50 === 0) {
+                        this.level++;
+                        this.gameSpeed = Math.max(50, 120 - (this.level - 1) * 10);
+                    }
+                    
+                    this.generateFood();
+                } else {
+                    this.snake.pop();
+                }
+
+                return !this.checkCollision();
+            }
+
+            checkCollision() {
+                const head = this.snake[0];
+                
+                // Wall collision
+                if (head.x < 0 || head.x >= this.canvasSize || 
+                    head.y < 0 || head.y >= this.canvasSize) {
+                    return true;
+                }
+
+                // Self collision
+                for (let i = 1; i < this.snake.length; i++) {
+                    if (head.x === this.snake[i].x && head.y === this.snake[i].y) {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            changeDirection(newDirection) {
+                switch(newDirection) {
+                    case 'up':
+                        if (this.direction.y !== this.gridSize) {
+                            this.nextDirection = { x: 0, y: -this.gridSize };
+                        }
+                        break;
+                    case 'down':
+                        if (this.direction.y !== -this.gridSize) {
+                            this.nextDirection = { x: 0, y: this.gridSize };
+                        }
+                        break;
+                    case 'left':
+                        if (this.direction.x !== this.gridSize) {
+                            this.nextDirection = { x: -this.gridSize, y: 0 };
+                        }
+                        break;
+                    case 'right':
+                        if (this.direction.x !== -this.gridSize) {
+                            this.nextDirection = { x: this.gridSize, y: 0 };
+                        }
+                        break;
+                }
+            }
+
+            draw() {
+                // Clear canvas
+                this.ctx.fillStyle = '#0a0a0a';
+                this.ctx.fillRect(0, 0, this.canvasSize, this.canvasSize);
+
+                // Draw grid
+                this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+                this.ctx.lineWidth = 1;
+                for (let x = 0; x < this.canvasSize; x += this.gridSize) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x, 0);
+                    this.ctx.lineTo(x, this.canvasSize);
+                    this.ctx.stroke();
+                }
+
+                // Draw snake
+                this.snake.forEach((segment, index) => {
+                    const isHead = index === 0;
+                    this.ctx.fillStyle = isHead ? '#00ff88' : '#00cc66';
+                    this.ctx.fillRect(segment.x, segment.y, this.gridSize, this.gridSize);
+                    
+                    // Snake border
+                    this.ctx.strokeStyle = isHead ? '#00ff88' : '#009944';
+                    this.ctx.lineWidth = 2;
+                    this.ctx.strokeRect(segment.x, segment.y, this.gridSize, this.gridSize);
+                });
+
+                // Draw food
+                this.ctx.fillStyle = '#ff0088';
+                this.ctx.beginPath();
+                this.ctx.arc(
+                    this.food.x + this.gridSize/2,
+                    this.food.y + this.gridSize/2,
+                    this.gridSize/2,
+                    0,
+                    Math.PI * 2
+                );
+                this.ctx.fill();
+            }
+
+            getState() {
+                return {
+                    score: this.score,
+                    level: this.level,
+                    snakeLength: this.snake.length
+                };
+            }
+        }
+
+        // ==================== APPLICATION INITIALIZATION ====================
+        const userManager = new UserManager();
+        const canvas = document.getElementById('gameCanvas');
+        const game = new SnakeGame(canvas);
+        let gameLoopId = null;
+
+        // DOM Elements
+        const authContainer = document.getElementById('authContainer');
+        const loginView = document.getElementById('loginView');
+        const registerView = document.getElementById('registerView');
+
+        // ==================== AUTHENTICATION FUNCTIONS ====================
+        function showRegister() {
+            loginView.classList.add('hidden');
+            registerView.classList.remove('hidden');
+        }
+
+        function showLogin() {
+            registerView.classList.add('hidden');
+            loginView.classList.remove('hidden');
+        }
+
+        function login() {
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                userManager.login(username, password);
+                authContainer.classList.add('hidden');
+                updateUserInterface();
+                game.draw(); // Initial draw
+            } catch (error) {
+                alert(error.message);
+            }
+        }
+
+        function register() {
+            const username = document.getElementById('registerUsername').value.trim();
+            const password = document.getElementById('registerPassword').value;
+            const email = document.getElementById('registerEmail').value.trim();
+
+            try {
+                userManager.register(username, password, email);
+                alert('Registration successful! Please login.');
+                showLogin();
+                // Clear form
+                document.getElementById('registerUsername').value = '';
+                document.getElementById('registerPassword').value = '';
+                document.getElementById('registerEmail').value = '';
+            } catch (error) {
+                alert(error.message);
+            }
+        }
+
+        function logout() {
+            userManager.logout();
+            authContainer.classList.remove('hidden');
+            stopGame();
+        }
+
+        // ==================== GAME FUNCTIONS ====================
+        function startGame() {
+            document.getElementById('startMenu').classList.add('hidden');
+            game.reset();
+            game.isPaused = false;
+            
+            if (gameLoopId) clearInterval(gameLoopId);
+            gameLoopId = setInterval(gameLoop, game.gameSpeed);
+        }
+
+        function pauseGame() {
+            game.isPaused = true;
+            document.getElementById('pauseMenu').classList.remove('hidden');
+        }
+
+        function resumeGame() {
+            game.isPaused = false;
+            document.getElementById('pauseMenu').classList.add('hidden');
+        }
+
+        function restartGame() {
+            document.getElementById('gameOverMenu').classList.add('hidden');
+            document.getElementById('pauseMenu').classList.add('hidden');
+            startGame();
+        }
+
+        function stopGame() {
+            if (gameLoopId) {
+                clearInterval(gameLoopId);
+                gameLoopId = null;
+            }
+            document.getElementById('startMenu').classList.remove('hidden');
+        }
+
+        function gameOver() {
+            stopGame();
+            
+            // Update user stats
+            userManager.updateUserStats(game.score, game.level);
+            
+            // Update UI
+            document.getElementById('finalScore').textContent = game.score;
+            document.getElementById('finalLevel').textContent = game.level;
+            document.getElementById('gameOverMenu').classList.remove('hidden');
+            
+            updateUserInterface();
+        }
+
+        function gameLoop() {
+            const isAlive = game.update();
+            game.draw();
+            updateGameUI();
+
+            if (!isAlive) {
+                gameOver();
+            }
+        }
+
+        // ==================== UI UPDATE FUNCTIONS ====================
+        function updateUserInterface() {
+            if (userManager.currentUser) {
+                const user = userManager.currentUser;
+                
+                // Update welcome message
+                document.getElementById('welcomeMessage').textContent = `Welcome, ${user.username}!`;
+                
+                // Update user stats
+                document.getElementById('userBestScore').textContent = user.bestScore;
+                document.getElementById('userGamesPlayed').textContent = user.gamesPlayed;
+                document.getElementById('menuBestScore').textContent = user.bestScore;
+                document.getElementById('menuLevel').textContent = user.bestLevel;
+                
+                // Update leaderboard
+                updateLeaderboard();
+            }
+        }
+
+        function updateGameUI() {
+            document.getElementById('currentScore').textContent = game.score;
+            document.getElementById('currentLevel').textContent = game.level;
+        }
+
+        function updateLeaderboard() {
+            const leaderboardList = document.getElementById('leaderboardList');
+            const leaderboard = userManager.getLeaderboard();
+            
+            leaderboardList.innerHTML = '';
+            
+            leaderboard.forEach((entry, index) => {
+                const item = document.createElement('div');
+                item.className = `leaderboard-item ${entry.username === userManager.currentUser?.username ? 'current-user' : ''}`;
+                
+                item.innerHTML = `
+                    <span>${index + 1}. ${entry.username}</span>
+                    <span>${entry.score}</span>
+                `;
+                
+                leaderboardList.appendChild(item);
+            });
+        }
+
+        // ==================== EVENT LISTENERS ====================
+        document.addEventListener('keydown', (e) => {
+            if (document.getElementById('startMenu').classList.contains('hidden') && 
+                document.getElementById('gameOverMenu').classList.contains('hidden')) {
+                switch(e.key) {
+                    case 'ArrowUp': game.changeDirection('up'); break;
+                    case 'ArrowDown': game.changeDirection('down'); break;
+                    case 'ArrowLeft': game.changeDirection('left'); break;
+                    case 'ArrowRight': game.changeDirection('right'); break;
+                    case ' ': 
+                        if (game.isPaused) resumeGame();
+                        else pauseGame();
+                        break;
+                    case 'Escape':
+                        pauseGame();
+                        break;
+                }
+            }
+        });
+
+        // Enter key for auth forms
+        document.getElementById('loginPassword').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') login();
+        });
+
+        document.getElementById('registerPassword').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') register();
+        });
+
+        // Initial setup
+        if (userManager.currentUser) {
+            authContainer.classList.add('hidden');
+            updateUserInterface();
+        }
+
+        game.draw(); // Initial draw
+    </script>
+</body>
+</html>
